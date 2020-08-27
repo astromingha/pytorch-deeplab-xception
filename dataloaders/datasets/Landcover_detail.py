@@ -29,7 +29,8 @@ class LandcoverSegmentation(data.Dataset):
                             '17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34',
                             '35','36','37','38','39','40','41','42','43']
 
-
+        self.mean = (0.27, 0.306, 0.294)    #cityscape mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)), #for save_experiment_config
+        self.std = (0.183, 0.17, 0.16)      #cityscape mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),   #for save_experiment_config
         self.ignore_index = 255
         self.class_map = dict(zip(self.valid_classes, range(self.NUM_CLASSES)))
 
@@ -87,7 +88,7 @@ class LandcoverSegmentation(data.Dataset):
             tr.RandomHorizontalFlip(),
             tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
             tr.RandomGaussianBlur(),
-            tr.Normalize(mean=(0.27, 0.306, 0.294), std=(0.183, 0.17, 0.16)),#(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            tr.Normalize(mean=self.mean, std= self.std ),
             tr.ToTensor()])
 
         return composed_transforms(sample)
@@ -96,7 +97,7 @@ class LandcoverSegmentation(data.Dataset):
 
         composed_transforms = transforms.Compose([
             tr.FixScaleCrop(crop_size=self.args.crop_size),
-            tr.Normalize(mean=(0.27, 0.306, 0.294), std=(0.183, 0.17, 0.16)),#(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            tr.Normalize(mean=self.mean, std=self.std ),
             tr.ToTensor()])
 
         return composed_transforms(sample)
