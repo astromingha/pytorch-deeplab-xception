@@ -13,7 +13,11 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+import pandas as pd
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+
 class Trainer(object):
     def __init__(self, args):
         self.args = args
@@ -24,7 +28,7 @@ class Trainer(object):
         # Define Tensorboard Summary
         self.summary = TensorboardSummary(self.saver.experiment_dir)
         self.writer = self.summary.create_summary()
-        
+
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
@@ -46,7 +50,7 @@ class Trainer(object):
         # Define Criterion
         # whether to use class balanced weights
         if args.use_balanced_weights:
-            classes_weights_path = os.path.join(Path.db_root_dir(args.dataset), args.dataset+'_classes_weights.npy')
+            classes_weights_path = os.path.join(Path.db_root_dir(args.dataset), args.dataset + '_classes_weights.npy')
             if os.path.isfile(classes_weights_path):
                 weight = np.load(classes_weights_path)
             else:
@@ -56,12 +60,12 @@ class Trainer(object):
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
-        
+
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
         # Define lr scheduler
         self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.train_loader))
+                                      args.epochs, len(self.train_loader))
 
         # Using cuda
         if args.cuda:
@@ -73,7 +77,7 @@ class Trainer(object):
         self.best_pred = 0.0
         if args.resume is not None:
             if not os.path.isfile(args.resume):
-                raise RuntimeError("=> no checkpoint found at '{}'" .format(args.resume))
+                raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             if args.cuda:
@@ -128,7 +132,6 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
-
     def validation(self, epoch):
         self.model.eval()
         self.evaluator.reset()
@@ -152,7 +155,7 @@ class Trainer(object):
         # Fast test during the training
         Acc = self.evaluator.Pixel_Accuracy()
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
+        mIoU, iou, confusion_matrix = self.evaluator.Mean_Intersection_over_Union_IOU()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
@@ -163,6 +166,13 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         print('Loss: %.3f' % test_loss)
+        print('iou: ',iou)
+        print('confusion matrix: ',confusion_matrix)
+
+        dataframe1 = pd.DataFrame(np.transpose(iou))
+        dataframe2 = pd.DataFrame(np.transpose(confusion_matrix))
+        dataframe1.to_csv("iou.csv",header=False,index=False)
+        dataframe2.to_csv("confumat.csv",header=False,index=False)
 
         new_pred = mIoU
         if new_pred > self.best_pred:
@@ -174,6 +184,7 @@ class Trainer(object):
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
@@ -187,7 +198,7 @@ def main():
                         help='dataset name (default: pascal)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
-    parser.add_argument('--workers', type=int, default=1,
+    parser.add_argument('--workers', type=int, default=2,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=513,
                         help='base image size')
@@ -197,18 +208,18 @@ def main():
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
-    parser.add_argument('--loss-type', type=str, default='focal',
+    parser.add_argument('--loss-type', type=str, default='ce',
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
     # training hyper params
-    parser.add_argument('--epochs', type=int, default=10000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=None, metavar='N',
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch_size', type=int, default=10,
+    parser.add_argument('--batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
-    parser.add_argument('--test_batch_size', type=int, default=None,
+    parser.add_argument('--test-batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 testing (default: auto)')
     parser.add_argument('--use-balanced-weights', action='store_true', default=False,
@@ -221,20 +232,20 @@ def main():
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
-    parser.add_argument('--weight_decay', type=float, default=5e-4,
+    parser.add_argument('--weight-decay', type=float, default=5e-4,
                         metavar='M', help='w-decay (default: 5e-4)')
     parser.add_argument('--nesterov', action='store_true', default=False,
                         help='whether use nesterov (default: False)')
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
-                        False, help='disables CUDA training')
+    False, help='disables CUDA training')
     parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default=None,
+    parser.add_argument('--resume', type=str, default= '/home/dkc/NAS/internal/private/run/cityscapes/deeplab-xception/model_best.pth.tar' ,
                         help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
@@ -244,7 +255,7 @@ def main():
     # evaluation option
     parser.add_argument('--eval-interval', type=int, default=1,
                         help='evaluuation interval (default: 1)')
-    parser.add_argument('--no_val', action='store_true', default=False,
+    parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
 
     args = parser.parse_args()
@@ -265,7 +276,7 @@ def main():
     if args.epochs is None:
         epoches = {
             'coco': 30,
-            'cityscapes': 10000,
+            'cityscapes': 300,
             'pascal': 50,
         }
         args.epochs = epoches[args.dataset.lower()]
@@ -284,20 +295,20 @@ def main():
         }
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
-
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        args.checkname = 'deeplab-' + str(args.backbone)
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)
     print('Starting Epoch:', trainer.args.start_epoch)
     print('Total Epoches:', trainer.args.epochs)
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
-        trainer.training(epoch)
-        if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
-            trainer.validation(epoch)
+    # for epoch in range(trainer.args.start_epoch, trainer.args.start_epoch):
+        # trainer.training(epoch)
+        # if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
+    trainer.validation(0)
 
     trainer.writer.close()
 
+
 if __name__ == "__main__":
-   main()
+    main()
