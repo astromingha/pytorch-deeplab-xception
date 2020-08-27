@@ -3,7 +3,8 @@ import shutil
 import torch
 from collections import OrderedDict
 import glob
-
+from dataloaders.datasets import Landcover_detail
+import json
 class Saver(object):
 
     def __init__(self, args):
@@ -15,6 +16,8 @@ class Saver(object):
         self.experiment_dir = os.path.join(self.directory, 'experiment_{}'.format(str(run_id)))
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
+
+        self.cityscapes_train = Landcover_detail.LandcoverSegmentation(args, split='train')
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""
@@ -47,6 +50,9 @@ class Saver(object):
         p = OrderedDict()
         p['datset'] = self.args.dataset
         p['backbone'] = self.args.backbone
+        p['valid_class_num'] = len(self.cityscapes_train.valid_classes)
+        p['mean'] = json.dumps(self.cityscapes_train.mean)
+        p['std'] = json.dumps(self.cityscapes_train.std)
         p['out_stride'] = self.args.out_stride
         p['lr'] = self.args.lr
         p['lr_scheduler'] = self.args.lr_scheduler
@@ -54,6 +60,8 @@ class Saver(object):
         p['epoch'] = self.args.epochs
         p['base_size'] = self.args.base_size
         p['crop_size'] = self.args.crop_size
+        p['gps_num'] = self.args.gpu_ids
+        p['resume'] = self.args.resume
 
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
