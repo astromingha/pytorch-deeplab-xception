@@ -54,6 +54,7 @@ class Saver(object):
         p['mean'] = json.dumps(self.cityscapes_train.mean)
         p['std'] = json.dumps(self.cityscapes_train.std)
         p['out_stride'] = self.args.out_stride
+        p['batch_size'] = self.args.batch_size
         p['lr'] = self.args.lr
         p['lr_scheduler'] = self.args.lr_scheduler
         p['loss_type'] = self.args.loss_type
