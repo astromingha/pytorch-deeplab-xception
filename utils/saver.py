@@ -63,6 +63,7 @@ class Saver(object):
         p['crop_size'] = self.args.crop_size
         p['gps_num'] = self.args.gpu_ids
         p['resume'] = self.args.resume
+        p['use_balanced_weights'] = self.args.use_balanced_weights
 
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
