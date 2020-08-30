@@ -97,7 +97,7 @@ class LandcoverSegmentation(data.Dataset):
 
         composed_transforms = transforms.Compose([
             tr.FixScaleCrop(crop_size=self.args.crop_size),
-            tr.Normalize(mean=self.mean, std=self.std ),
+            tr.Normalize(mean=self.mean, std=self.std),
             tr.ToTensor()])
 
         return composed_transforms(sample)
@@ -106,7 +106,7 @@ class LandcoverSegmentation(data.Dataset):
 
         composed_transforms = transforms.Compose([
             tr.FixedResize(size=self.args.crop_size),
-            tr.Normalize(mean=(0.27, 0.306, 0.294), std=(0.183, 0.17, 0.16)),#(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            tr.Normalize(mean=self.mean, std=self.std),
             tr.ToTensor()])
 
         return composed_transforms(sample)
