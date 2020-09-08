@@ -23,11 +23,11 @@ class LandcoverSegmentation(data.Dataset):
         self.files[split] = self.recursive_glob(rootdir=self.images_base)#, suffix='.png')
 
         self.void_classes = []#
-        self.valid_classes = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43]
+        self.valid_classes = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42]
 
-        self.class_names = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
+        self.class_names = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
                             '17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34',
-                            '35','36','37','38','39','40','41','42','43']
+                            '35','36','37','38','39','40','41','42']
 
         self.mean = (0.27, 0.306, 0.294)    #cityscape mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)), #for save_experiment_config
         self.std = (0.183, 0.17, 0.16)      #cityscape mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),   #for save_experiment_config
@@ -88,7 +88,7 @@ class LandcoverSegmentation(data.Dataset):
             tr.RandomHorizontalFlip(),
             tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
             tr.RandomGaussianBlur(),
-            tr.Normalize(mean=self.mean, std= self.std ),
+            tr.Normalize(mean=self.mean, std= self.std),
             tr.ToTensor()])
 
         return composed_transforms(sample)
