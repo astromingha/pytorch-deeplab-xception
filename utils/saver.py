@@ -48,7 +48,7 @@ class Saver(object):
         logfile = os.path.join(self.experiment_dir, 'parameters.txt')
         log_file = open(logfile, 'w')
         p = OrderedDict()
-        p['datset'] = self.args.dataset
+        p['dataset'] = self.args.dataset
         p['backbone'] = self.args.backbone
         p['valid_class_num'] = len(self.cityscapes_train.valid_classes)
         p['mean'] = json.dumps(self.cityscapes_train.mean)
@@ -61,7 +61,7 @@ class Saver(object):
         p['epoch'] = self.args.epochs
         p['base_size'] = self.args.base_size
         p['crop_size'] = self.args.crop_size
-        p['gps_num'] = self.args.gpu_ids
+        p['gpu_num'] = self.args.gpu_ids
         p['resume'] = self.args.resume
         p['use_balanced_weights'] = self.args.use_balanced_weights
 
