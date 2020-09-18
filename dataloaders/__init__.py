@@ -1,4 +1,4 @@
-from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, Landcover_detail
+from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, Landcover_detail, Landcover_mid, Landcover_main
 from torch.utils.data import DataLoader
 
 def make_data_loader(args, **kwargs):
@@ -18,12 +18,20 @@ def make_data_loader(args, **kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif args.dataset == 'cityscapes':
-        # train_set = cityscapes.CityscapesSegmentation(args, split='train')
-        # val_set = cityscapes.CityscapesSegmentation(args, split='val')
-        # test_set = cityscapes.CityscapesSegmentation(args, split='test')
-        train_set = Landcover_detail.LandcoverSegmentation(args, split='train')
-        val_set = Landcover_detail.LandcoverSegmentation(args, split='val')
-        test_set = Landcover_detail.LandcoverSegmentation(args, split='test')
+        if args.dataset_cat == 'detail':
+            train_set = Landcover_detail.LandcoverSegmentation(args, split='train')
+            val_set = Landcover_detail.LandcoverSegmentation(args, split='val')
+            test_set = Landcover_detail.LandcoverSegmentation(args, split='test')
+        elif args.dataset_cat == 'middle':
+            train_set = Landcover_mid.LandcoverSegmentation(args, split='train')
+            val_set = Landcover_mid.LandcoverSegmentation(args, split='val')
+            test_set = Landcover_mid.LandcoverSegmentation(args, split='test')
+        elif args.dataset_cat == 'main':
+            train_set = Landcover_main.LandcoverSegmentation(args, split='train')
+            val_set = Landcover_main.LandcoverSegmentation(args, split='val')
+            test_set = Landcover_main.LandcoverSegmentation(args, split='test')
+        else:
+            raise print("choose dataset category!")
         num_class = train_set.NUM_CLASSES
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
         val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)
