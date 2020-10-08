@@ -15,12 +15,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
-    parser.add_argument('--in-path', type=str,  default='/home/user/Desktop/test/test.jpg')
+    parser.add_argument('--in-path', type=str,  default='/home/user/Desktop/test/segtest.jpg')
     parser.add_argument('--out-path', type=str,  default='/home/user/Desktop/test/test_infer.jpg')
     parser.add_argument('--backbone', type=str, default='xception',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--ckpt', type=str, default='/home/user/Work/deeplab_2/run_best_3937/cityscapes/deeplab-xception/model_best.pth.tar',
+    parser.add_argument('--ckpt', type=str, default='/home/user/Work/pytorch-deeplab-xception/run/cityscapes/deeplab-xception/model_best.pth.tar',
                         help='saved model')
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
@@ -53,7 +53,7 @@ def main():
         else:
             args.sync_bn = False
 
-    model = DeepLab(num_classes=37,
+    model = DeepLab(num_classes=43,
                     backbone=args.backbone,
                     output_stride=args.out_stride,
                     sync_bn=args.sync_bn,
