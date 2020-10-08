@@ -1,4 +1,4 @@
-from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, Landcover_detail, Landcover_mid, Landcover_main
+from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, radish
 from torch.utils.data import DataLoader
 
 def make_data_loader(args, **kwargs):
@@ -18,20 +18,11 @@ def make_data_loader(args, **kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif args.dataset == 'cityscapes':
-        if args.dataset_cat == 'detail':
-            train_set = Landcover_detail.LandcoverSegmentation(args, split='train')
-            val_set = Landcover_detail.LandcoverSegmentation(args, split='val')
-            test_set = Landcover_detail.LandcoverSegmentation(args, split='test')
-        elif args.dataset_cat == 'middle':
-            train_set = Landcover_mid.LandcoverSegmentation(args, split='train')
-            val_set = Landcover_mid.LandcoverSegmentation(args, split='val')
-            test_set = Landcover_mid.LandcoverSegmentation(args, split='test')
-        elif args.dataset_cat == 'main':
-            train_set = Landcover_main.LandcoverSegmentation(args, split='train')
-            val_set = Landcover_main.LandcoverSegmentation(args, split='val')
-            test_set = Landcover_main.LandcoverSegmentation(args, split='test')
-        else:
-            raise print("choose dataset category!")
+
+        train_set = radish.LandcoverSegmentation(args, split='train')
+        val_set = radish.LandcoverSegmentation(args, split='val')
+        test_set = radish.LandcoverSegmentation(args, split='val')
+
         num_class = train_set.NUM_CLASSES
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
         val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)

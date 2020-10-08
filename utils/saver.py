@@ -3,7 +3,7 @@ import shutil
 import torch
 from collections import OrderedDict
 import glob
-from dataloaders.datasets import Landcover_detail,Landcover_mid,Landcover_main
+from dataloaders.datasets import radish
 import json
 class Saver(object):
 
@@ -17,12 +17,7 @@ class Saver(object):
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
 
-        if self.args.dataset_cat == 'detail':
-            self.cityscapes_train = Landcover_detail.LandcoverSegmentation(args, split='train')
-        elif self.args.dataset_cat == 'middle':
-            self.cityscapes_train = Landcover_mid.LandcoverSegmentation(args, split='train')
-        elif self.args.dataset_cat == 'main':
-            self.cityscapes_train = Landcover_main.LandcoverSegmentation(args, split='train')
+        self.cityscapes_train = radish.LandcoverSegmentation(args, split='train')
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""
@@ -54,7 +49,6 @@ class Saver(object):
         log_file = open(logfile, 'w')
         p = OrderedDict()
         p['dataset'] = self.args.dataset
-        p['category'] = self.args.dataset_cat
         p['backbone'] = self.args.backbone
         p['valid_class_num'] = len(self.cityscapes_train.valid_classes)
         p['mean'] = json.dumps(self.cityscapes_train.mean)
