@@ -15,7 +15,7 @@ from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
 import pandas as pd
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 class Trainer(object):
@@ -23,11 +23,11 @@ class Trainer(object):
         self.args = args
 
         # Define Saver
-        self.saver = Saver(args)
-        self.saver.save_experiment_config()
+        # self.saver = Saver(args)
+        # self.saver.save_experiment_config()
         # Define Tensorboard Summary
-        self.summary = TensorboardSummary(self.saver.experiment_dir)
-        self.writer = self.summary.create_summary()
+        # self.summary = TensorboardSummary(self.saver.experiment_dir)
+        # self.writer = self.summary.create_summary()
 
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
@@ -118,7 +118,7 @@ class Trainer(object):
                 global_step = i + num_img_tr * epoch
                 self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
-        self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
+        # self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
 
@@ -157,11 +157,7 @@ class Trainer(object):
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
         mIoU, iou, confusion_matrix = self.evaluator.Mean_Intersection_over_Union_IOU()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
-        self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
-        self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        self.writer.add_scalar('val/Acc', Acc, epoch)
-        self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-        self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
@@ -171,23 +167,25 @@ class Trainer(object):
 
         dataframe1 = pd.DataFrame(np.transpose(iou))
         dataframe2 = pd.DataFrame(np.transpose(confusion_matrix))
-        dataframe1.to_csv("iou.csv",header=False,index=False)
-        dataframe2.to_csv("confumat.csv",header=False,index=False)
+        dataframe1.to_csv("/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/4th_detail_ce_iou_startfrom1.csv",header=False,index=False)
+        dataframe2.to_csv("/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/4th_detail_ce_startfrom1.csv",header=False,index=False)
 
-        new_pred = mIoU
-        if new_pred > self.best_pred:
-            is_best = True
-            self.best_pred = new_pred
-            self.saver.save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': self.model.module.state_dict(),
-                'optimizer': self.optimizer.state_dict(),
-                'best_pred': self.best_pred,
-            }, is_best)
+        # new_pred = mIoU
+        # if new_pred > self.best_pred:
+        #     is_best = True
+        #     self.best_pred = new_pred
+        #     self.saver.save_checkpoint({
+        #         'epoch': epoch + 1,
+        #         'state_dict': self.model.module.state_dict(),
+        #         'optimizer': self.optimizer.state_dict(),
+        #         'best_pred': self.best_pred,
+        #     }, is_best)
 
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
+    parser.add_argument('--dataset_cat', type=str, default='detail',
+                        choices=['detail', 'middle', 'main'], help='category')
     parser.add_argument('--backbone', type=str, default='xception',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
@@ -198,7 +196,7 @@ def main():
                         help='dataset name (default: pascal)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
-    parser.add_argument('--workers', type=int, default=2,
+    parser.add_argument('--workers', type=int, default=1,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=513,
                         help='base image size')
@@ -216,7 +214,7 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=None,
+    parser.add_argument('--batch-size', type=int, default=8,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
     parser.add_argument('--test-batch-size', type=int, default=None,
@@ -245,7 +243,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default= '/home/dkc/NAS/internal/private/run/cityscapes/deeplab-xception/model_best.pth.tar' ,
+    parser.add_argument('--resume', type=str, default= '/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/model_best.pth.tar',
                         help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
@@ -307,7 +305,7 @@ def main():
         # if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
     trainer.validation(0)
 
-    trainer.writer.close()
+    # trainer.writer.close()
 
 
 if __name__ == "__main__":
