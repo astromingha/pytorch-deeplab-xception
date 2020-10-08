@@ -21,14 +21,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class Trainer(object):
     def __init__(self, args):
         self.args = args
-
-        # Define Saver
-        # self.saver = Saver(args)
-        # self.saver.save_experiment_config()
-        # Define Tensorboard Summary
-        # self.summary = TensorboardSummary(self.saver.experiment_dir)
-        # self.writer = self.summary.create_summary()
-
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
