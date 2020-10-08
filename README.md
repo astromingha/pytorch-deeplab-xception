@@ -1,3 +1,2 @@
 
-Deeplab-xception for landcover classification
-
+Deeplab-xception
