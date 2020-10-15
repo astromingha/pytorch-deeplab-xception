@@ -1,0 +1,17 @@
+dataset:cityscapes
+category:detail
+backbone:xception
+valid_class_num:41
+mean:[0.27, 0.306, 0.294]
+std:[0.227, 0.211, 0.198]
+out_stride:16
+batch_size:4
+lr:0.0001
+lr_scheduler:poly
+loss_type:ce
+epoch:10000
+base_size:513
+crop_size:513
+gpu_num:[0]
+resume:run/cityscapes/deeplab-xception/experiment_3/checkpoint.pth.tar
+use_balanced_weights:False
