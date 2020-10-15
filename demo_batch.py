@@ -15,12 +15,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
-    parser.add_argument('--in-path', type=str,  default='/home/user/test_img')
-    parser.add_argument('--out-path', type=str,  default='/home/user/2nd_data')
-    parser.add_argument('--backbone', type=str, default='xception',
+    parser.add_argument('--in-path', type=str,  default='/home/user/Dataset/JejuAI/radish/cityscape_format/2nd/leftImg8bit/val')
+    parser.add_argument('--out-path', type=str,  default='/home/user/Desktop/deeplab')
+    parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--ckpt', type=str, default='/home/user/Work/pytorch-deeplab-xception/run_2nd_best_butnolog/cityscapes/deeplab-xception/experiment_5/checkpoint.pth.tar',
+    parser.add_argument('--ckpt', type=str, default='run/cityscapes/deeplab-resnet/model_best.pth.tar',
                         help='saved model')
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
@@ -53,17 +53,17 @@ def main():
         else:
             args.sync_bn = False
 
-    model = DeepLab(num_classes=43,
+    model = DeepLab(num_classes=2,
                     backbone=args.backbone,
                     output_stride=args.out_stride,
                     sync_bn=args.sync_bn,
-                    freeze_bn=args.freeze_bn)
+                    freeze_bn=args.freeze_bn).cuda()
 
-    ckpt = torch.load(args.ckpt, map_location='cpu')
+    ckpt = torch.load(args.ckpt)#, map_location='cpu')
     model.load_state_dict(ckpt['state_dict'])
 
     composed_transforms = transforms.Compose([
-        tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        tr.Normalize(mean=(0.242, 0.324, 0.241), std=(0.188, 0.190, 0.179)),
         tr.ToTensor()])
 
     img_list = os.listdir(args.in_path)

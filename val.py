@@ -15,7 +15,7 @@ from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
 import pandas as pd
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 class Trainer(object):
@@ -159,8 +159,8 @@ class Trainer(object):
 
         dataframe1 = pd.DataFrame(np.transpose(iou))
         dataframe2 = pd.DataFrame(np.transpose(confusion_matrix))
-        dataframe1.to_csv("/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/4th_detail_ce_iou_startfrom1.csv",header=False,index=False)
-        dataframe2.to_csv("/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/4th_detail_ce_startfrom1.csv",header=False,index=False)
+        dataframe1.to_csv("/home/user/Desktop/iou.csv",header=False,index=False)
+        dataframe2.to_csv("/home/user/Desktop/confumatrix.csv",header=False,index=False)
 
         # new_pred = mIoU
         # if new_pred > self.best_pred:
@@ -178,7 +178,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--dataset_cat', type=str, default='detail',
                         choices=['detail', 'middle', 'main'], help='category')
-    parser.add_argument('--backbone', type=str, default='xception',
+    parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
     parser.add_argument('--out-stride', type=int, default=16,
@@ -235,7 +235,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default= '/media/user/INNO_Mingha/환경피복도/모델 수거/dkc/run/cityscapes/deeplab-xception_withzerolabel/experiment_1/model_best.pth.tar',
+    parser.add_argument('--resume', type=str, default= 'run/cityscapes/deeplab-resnet/model_best.pth.tar',
                         help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')

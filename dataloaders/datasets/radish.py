@@ -27,8 +27,8 @@ class LandcoverSegmentation(data.Dataset):
 
         self.class_names = ['0','1']
 
-        self.mean = (0.242, 0.324, 0.241)
-        self.std = (0.188, 0.190, 0.179)
+        self.mean = (0.420, 0.452, 0.343)#(0.242, 0.324, 0.241)
+        self.std = (0.194, 0.187, 0.185)#(0.188, 0.190, 0.179)
         self.ignore_index = 255
         self.class_map = dict(zip(self.valid_classes, range(self.NUM_CLASSES)))
 
