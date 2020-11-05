@@ -84,6 +84,7 @@ class LandcoverSegmentation(data.Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
+            tr.RandomRotate(360),
             tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
             tr.RandomGaussianBlur(),
             tr.Normalize(mean=self.mean, std= self.std),
