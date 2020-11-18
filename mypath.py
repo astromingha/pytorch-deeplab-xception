@@ -6,7 +6,7 @@ class Path(object):
         elif dataset == 'sbd':
             return '/path/to/datasets/benchmark_RELEASE/'  # folder that contains dataset/.
         elif dataset == 'cityscapes':
-            return '/home/user/Dataset/JejuAI/radish/2nd_include_novalue/cityscape_format'    # foler that contains leftImg8bit/
+            return '/home/user/Dataset/NIA/1st/cityscapes/'    # foler that contains leftImg8bit/
     # foler that contains leftImg8bit/
         elif dataset == 'coco':
             return '/path/to/datasets/coco/'

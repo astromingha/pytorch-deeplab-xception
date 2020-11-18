@@ -1,4 +1,4 @@
-from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, radish
+from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd, radish, crops
 from torch.utils.data import DataLoader
 
 def make_data_loader(args, **kwargs):
@@ -19,9 +19,13 @@ def make_data_loader(args, **kwargs):
 
     elif args.dataset == 'cityscapes':
 
-        train_set = radish.LandcoverSegmentation(args, split='train')
-        val_set = radish.LandcoverSegmentation(args, split='val')
-        test_set = radish.LandcoverSegmentation(args, split='val')
+        # train_set = radish.LandcoverSegmentation(args, split='train')
+        # val_set = radish.LandcoverSegmentation(args, split='val')
+        # test_set = radish.LandcoverSegmentation(args, split='val')
+
+        train_set = crops.CropSegmentation(args, split='train')
+        val_set = crops.CropSegmentation(args, split='val')
+        test_set = crops.CropSegmentation(args, split='val')
 
         num_class = train_set.NUM_CLASSES
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)

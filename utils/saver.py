@@ -3,13 +3,14 @@ import shutil
 import torch
 from collections import OrderedDict
 import glob
-from dataloaders.datasets import radish
+from dataloaders.datasets import radish, crops
 import json
 class Saver(object):
 
     def __init__(self, args):
         self.args = args
-        self.directory = os.path.join('run', args.dataset+'_augmented', args.checkname)
+        # self.directory = os.path.join('run', args.dataset, args.checkname)
+        self.directory = os.path.join('run', 'NIA', args.checkname+'_1024')
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
 
@@ -17,7 +18,8 @@ class Saver(object):
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
 
-        self.cityscapes_train = radish.LandcoverSegmentation(args, split='train')
+        # self.cityscapes_train = radish.LandcoverSegmentation(args, split='train')
+        self.cityscapes_train = crops.CropSegmentation(args, split='train')
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""

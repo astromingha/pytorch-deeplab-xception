@@ -25,8 +25,8 @@ def main():
         ## Geo-referencing ##
 
         # ########## inference test code (visualization) ##########
-        # inference.drawContour(os.path.join(out_dir, img))
-        inference.maskImg(os.path.join(out_dir,img))
+        inference.drawContour(os.path.join(out_dir, img))
+        # inference.maskImg(os.path.join(out_dir,img))
 
 
 
