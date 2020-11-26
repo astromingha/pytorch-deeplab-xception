@@ -10,7 +10,7 @@ irange = range
 import numpy as np
 from pycocotools import mask as maskUtils
 from skimage import draw
-
+from dataloaders.utils import decode_seg_map_sequence_
 
 def polygon2mask(image_shape, polygon, color=(255,), image=None):
     vertex_col_coords, vertex_row_coords = polygon.T
@@ -27,8 +27,10 @@ class Inference():
     def __init__(self):
         ## model load ( at the beginning )
         # model_ckpt = 'config/model_best.pth.tar'
-        model_ckpt = 'run/cityscapes/deeplab-resnet/model_best.pth.tar'
-        self.model = DeepLab(num_classes=2).cuda()
+        model_ckpt = 'run/NIA/deeplab-resnet_512/model_best.pth.tar'
+        # model_ckpt = 'run/NIA/deeplab-resnet_1024/model_best.pth.tar'
+        self.crop_size = 512
+        self.model = DeepLab(num_classes=5).cuda()
         ckpt = torch.load(model_ckpt)
         self.model.load_state_dict(ckpt['state_dict'])
         self.model.eval()
@@ -46,9 +48,11 @@ class Inference():
         ## image input processing for inference
         sample = {'image': image, 'label': image}
         composed_transforms = transforms.Compose([
-            tr.FixScaleCrop(crop_size=512),
+            # tr.FixScaleCrop(crop_size=512),
+            tr.FixScaleCrop(crop_size=self.crop_size),
             tr.RandomGaussianBlur(),
-            tr.Normalize(mean=(0.420, 0.452, 0.343), std=(0.194, 0.187, 0.185)),
+            # tr.Normalize(mean=(0.420, 0.452, 0.343), std=(0.194, 0.187, 0.185)),
+            tr.Normalize(mean=(0.352, 0.393, 0.325), std=(0.246, 0.257, 0.230)),
             tr.ToTensor()])
         tensor_in = composed_transforms(sample)['image'].unsqueeze(0)
         image= tensor_in.cuda()
@@ -58,20 +62,25 @@ class Inference():
             output = self.model(image)
 
         ## post-processing
-        output_nparr_mask = torch.max(output[:3], 1)[1].detach().cpu().numpy()[0].astype(np.uint8)
-        # output_npmask_resize = cv2.resize(output_nparr_mask, (w, h), interpolation=cv2.INTER_CUBIC)
-        contours, hierachy = cv2.findContours(output_nparr_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        # contours, hierachy = cv2.findContours(output_npmask_resize, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # output_nparr_mask = torch.max(output[:3], 1)[1].detach().cpu().numpy()[0].astype(np.uint8)
+        output_nparr_mask_splited = decode_seg_map_sequence_(torch.max(output[:3], 1)[1].detach().cpu().numpy())
 
+        segmentations, contours_new = [], []
 
-        segmentations,contours_new = [],[]
+        for ch in range(output_nparr_mask_splited[0].shape[-1]):
+            output_nparr_mask = output_nparr_mask_splited[0][:, :, ch].astype(np.uint8)
+            ##resize
+            if output_nparr_mask.shape[0] != h or output_nparr_mask.shape[1] != w:
+                output_nparr_mask = cv2.resize(output_nparr_mask, (w, h), interpolation=cv2.INTER_CUBIC)
+            contours, hierachy = cv2.findContours(output_nparr_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area <= 10000: continue
-            segmentations.append(contour.flatten().tolist())
-            contours_new.append(contour)
-            # print("area: ",area)
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                # if area <= 10000: continue
+                segmentations.append(contour.flatten().tolist()+[ch])
+                contours_new.append(contour)
+                # print("area: ",area)
+
         self.segmentations = segmentations
         self.contours_new = contours_new
         return segmentations
@@ -92,17 +101,17 @@ class Inference():
     def maskImg(self, path):
         img = self.original_image
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_CUBIC)  # 512
+        # img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_CUBIC)  # 512
         seg = self.segmentations
 
+        color = [(255, 255, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
         mask = img.copy()
         for segm in seg:
-            pts = np.array([segm]).reshape((-1, 2))
-            color = (255, 255, 255)
-            try:
-                mask = polygon2mask(img.shape, pts, color=color, image=mask)
-            except TypeError:
-                test =0
+            pts = np.array([segm[:-1]]).reshape((-1, 2))
+            class_num = segm[-1]
+
+            # if class_num != 0: continue
+            mask = polygon2mask(img.shape, pts, color=color[class_num], image=mask)
 
         overlay_img = (0.5 * img + 0.5 * mask).astype(np.uint8)
         # cv2.imwrite('result.jpg', overlay_img)

@@ -10,6 +10,50 @@ def decode_seg_map_sequence(label_masks, dataset='cityscapes'):
     rgb_masks = torch.from_numpy(np.array(rgb_masks).transpose([0, 3, 1, 2]))
     return rgb_masks
 
+def decode_seg_map_sequence_(label_masks, dataset='cityscapes'):
+    rgb_masks = []
+    for label_mask in label_masks:
+        rgb_mask = decode_split_classes(label_mask)
+        rgb_masks.append(rgb_mask)
+    # rgb_masks = torch.from_numpy(np.array(rgb_masks).transpose([0, 3, 1, 2]))
+    return rgb_masks
+# TODO: segmenting more than 4 classes
+def decode_split_classes(label_mask):
+    """Decode segmentation class labels into a color image
+    Args:
+        label_mask (np.ndarray): an (M,N) array of integer values denoting
+          the class label at each spatial location.
+        plot (bool, optional): whether to show the resulting color image
+          in a figure.
+    Returns:
+        (np.ndarray, optional): the resulting decoded color image.
+    """
+    class_1 = label_mask.copy()
+    class_2 = label_mask.copy()
+    class_3 = label_mask.copy()
+    class_4 = label_mask.copy()
+
+    class_1[label_mask == 1] = 1
+    class_1[label_mask != 1] = 0
+
+    class_2[label_mask == 2] = 2
+    class_2[label_mask != 2] = 0
+
+    class_3[label_mask == 3] = 3
+    class_3[label_mask != 3] = 0
+
+    class_4[label_mask == 4] = 4
+    class_4[label_mask != 4] = 0
+
+    classes_split_mask = np.zeros((label_mask.shape[0], label_mask.shape[1], 4))
+
+    classes_split_mask[:,:,0] = class_1
+    classes_split_mask[:,:,1] = class_2
+    classes_split_mask[:,:,2] = class_3
+    classes_split_mask[:,:,3] = class_4
+
+    return classes_split_mask
+
 
 def decode_segmap(label_mask, dataset, plot=False):
     """Decode segmentation class labels into a color image
