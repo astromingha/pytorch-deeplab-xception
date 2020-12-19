@@ -57,6 +57,17 @@ class RandomHorizontalFlip(object):
         return {'image': img,
                 'label': mask}
 
+class RandomRotate_in4deg(object):
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        degree = {0: 0, 1: 90, 2: 180, 3: 270}
+        rotate_degree = degree[random.randint(0,3)]
+        img = img.rotate(rotate_degree, Image.BILINEAR)
+        mask = mask.rotate(rotate_degree, Image.NEAREST)
+
+        return {'image': img,
+                'label': mask}
 
 class RandomRotate(object):
     def __init__(self, degree):
