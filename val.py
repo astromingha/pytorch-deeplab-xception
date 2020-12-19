@@ -154,13 +154,19 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         print('Loss: %.3f' % test_loss)
-        print('iou: ',iou)
-        print('confusion matrix: ',confusion_matrix)
+        print('----------------------------------------------------------------------')
+        print('iou: ')
+        class_name = ['Background','radish','cabbage','broccoli','garlic']
+
+        for i in range(len(iou)):
+            print('     %s : %.2f'%(class_name[i],iou[i]))
+        # print('confusion matrix: ',confusion_matrix)
+        print('\n')
 
         dataframe1 = pd.DataFrame(np.transpose(iou))
         dataframe2 = pd.DataFrame(np.transpose(confusion_matrix))
-        dataframe1.to_csv("/home/user/Desktop/iou.csv",header=False,index=False)
-        dataframe2.to_csv("/home/user/Desktop/confumatrix.csv",header=False,index=False)
+        # dataframe1.to_csv("/home/user/Desktop/iou_5th_512_.csv",header=False,index=False)
+        # dataframe2.to_csv("/home/user/Desktop/confumatrix_5th_512.csv",header=False,index=False)
 
         # new_pred = mIoU
         # if new_pred > self.best_pred:
@@ -190,9 +196,9 @@ def main():
                         help='whether to use SBD dataset (default: True)')
     parser.add_argument('--workers', type=int, default=1,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base-size', type=int, default=513,
+    parser.add_argument('--base-size', type=int, default=512,
                         help='base image size')
-    parser.add_argument('--crop-size', type=int, default=513,
+    parser.add_argument('--crop-size', type=int, default=512,
                         help='crop image size')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
@@ -206,7 +212,7 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=16,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
     parser.add_argument('--test-batch-size', type=int, default=None,
@@ -235,7 +241,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default= 'run/cityscapes/deeplab-resnet/model_best.pth.tar',
+    parser.add_argument('--resume', type=str, default= 'run/NIA/deeplab-resnet/model_best.pth.tar',
                         help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
