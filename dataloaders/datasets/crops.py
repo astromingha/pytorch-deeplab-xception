@@ -84,9 +84,10 @@ class CropSegmentation(data.Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
-            tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
+            # tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
+            tr.FixScaleCrop(crop_size=self.args.crop_size),
             tr.RandomGaussianBlur(),
-            tr.RandomRotate(360),
+            tr.RandomRotate_in4deg(),
             tr.Normalize(mean=self.mean, std= self.std),
             tr.ToTensor()])
 
@@ -110,11 +111,6 @@ class CropSegmentation(data.Dataset):
 
         return composed_transforms(sample)
 
-    def transform_preprocess(self, sample):
-
-        composed_transforms = transforms.Compose([
-            tr.ToTensor()])
-        return composed_transforms(sample)
 
 if __name__ == '__main__':
     from dataloaders.utils import decode_segmap
