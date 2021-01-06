@@ -23,8 +23,9 @@ class Trainer(object):
         self.args = args
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
-
+        # self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
+        self.train_loader, self.val_loader, self.test_loader, self.nclass, self.class_names = make_data_loader(args,
+                                                                                                               **kwargs)
         # Define network
         model = DeepLab(num_classes=self.nclass,
                         backbone=args.backbone,
@@ -156,17 +157,17 @@ class Trainer(object):
         print('Loss: %.3f' % test_loss)
         print('----------------------------------------------------------------------')
         print('iou: ')
-        class_name = ['Background','radish','cabbage','broccoli','garlic']
+        class_name = self.class_names
 
         for i in range(len(iou)):
-            print('     %s : %.2f'%(class_name[i],iou[i]))
+            print('     %s : %.2f' % (class_name[i], iou[i]))
         # print('confusion matrix: ',confusion_matrix)
         print('\n')
 
         dataframe1 = pd.DataFrame(np.transpose(iou))
         dataframe2 = pd.DataFrame(np.transpose(confusion_matrix))
-        # dataframe1.to_csv("/home/user/Desktop/iou_5th_512_.csv",header=False,index=False)
-        # dataframe2.to_csv("/home/user/Desktop/confumatrix_5th_512.csv",header=False,index=False)
+        dataframe1.to_csv(self.args.savedir+"iou.csv",header=False,index=False)
+        dataframe2.to_csv(self.args.savedir+"confumatrix_3th.csv",header=False,index=False)
 
         # new_pred = mIoU
         # if new_pred > self.best_pred:
@@ -212,7 +213,7 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--batch-size', type=int, default=32,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
     parser.add_argument('--test-batch-size', type=int, default=None,
@@ -241,8 +242,9 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default= 'run/NIA/deeplab-resnet/model_best.pth.tar',
+    parser.add_argument('--resume', type=str, default= '/home/user/NAS/internal/Dataset/NIA/3rd/results/deeplab-resnet_pretr/model_best.pth.tar',
                         help='put the path to resuming file if needed')
+    parser.add_argument('--savedir', type=str, default='/home/user/Desktop/', help='put the path to save file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
     # finetuning pre-trained models
