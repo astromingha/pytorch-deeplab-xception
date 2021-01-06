@@ -5,12 +5,14 @@ from collections import OrderedDict
 import glob
 from dataloaders.datasets import radish, crops
 import json
+import pandas as pd
+
 class Saver(object):
 
     def __init__(self, args):
         self.args = args
         # self.directory = os.path.join('run', args.dataset, args.checkname)
-        self.directory = os.path.join('run', 'NIA', args.checkname+'_1024')
+        self.directory = os.path.join('/home/user/NAS/internal/Dataset/NIA/3rd/', 'results', args.checkname+'_Test')
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
 
@@ -20,6 +22,17 @@ class Saver(object):
 
         # self.cityscapes_train = radish.LandcoverSegmentation(args, split='train')
         self.cityscapes_train = crops.CropSegmentation(args, split='train')
+
+    def save_validation_results(self,iou,confusion_matrix):
+        dataframe1 = pd.DataFrame(iou)
+        dataframe2 = pd.DataFrame(confusion_matrix)
+        dataframe1.to_excel(excel_writer=os.path.join(self.directory, "iou.xlsx"))
+        dataframe2.to_excel(excel_writer=os.path.join(self.directory, "confumatrix.xlsx"))
+        # raw_data = {'col0': [1, 2, 3, 4],
+        #            >> > 'col1': [10, 20, 30, 40],
+        # >> > 'col2': [100, 200, 300, 400]}  # 리스트 자료형으로 생성
+        # >> > raw_data = pd.DataFrame(raw_data)  # 데이터 프레임으로 전환
+        # >> > raw_data.to_excel(excel_writer='sample.xlsx')  # 엑셀로 저장
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""
