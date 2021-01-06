@@ -8,7 +8,7 @@ from torchvision import transforms
 from dataloaders import custom_transforms as tr
 
 class CropSegmentation(data.Dataset):
-    NUM_CLASSES = 5
+    NUM_CLASSES = 6
 
     def __init__(self, args, root=Path.db_root_dir('cityscapes'), split="train"):
 
@@ -18,14 +18,14 @@ class CropSegmentation(data.Dataset):
         self.files = {}
 
         self.images_base = os.path.join(self.root, 'leftImg8bit', self.split)
-        self.annotations_base = os.path.join(self.root, 'gtFine', self.split)
+        self.annotations_base = os.path.join(self.root, 'gtFine_mmseg', self.split)
 
         self.files[split] = self.recursive_glob(rootdir=self.images_base)#, suffix='.png')
 
-        self.void_classes = [-1]#
-        self.valid_classes = [0,1,2,3,4]
+        self.void_classes = [0]#
+        self.valid_classes = [1,2,3,4,5,6]
 
-        self.class_names = ['0','1','2','3','4']
+        self.class_names = ['radish', 'carrot', 'cabbage', 'garlic', 'onion', 'broccoli']
 
         self.mean = (0.352, 0.393, 0.325)#(0.242, 0.324, 0.241)
         self.std = (0.246, 0.257, 0.230)#(0.188, 0.190, 0.179)
@@ -84,11 +84,10 @@ class CropSegmentation(data.Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
-            # tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
-            tr.FixScaleCrop(crop_size=self.args.crop_size),
+            tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size, fill=255),
             tr.RandomGaussianBlur(),
             tr.RandomRotate_in4deg(),
-            tr.Normalize(mean=self.mean, std= self.std),
+            tr.Normalize(mean=self.mean, std=self.std),
             tr.ToTensor()])
 
         return composed_transforms(sample)
@@ -111,6 +110,11 @@ class CropSegmentation(data.Dataset):
 
         return composed_transforms(sample)
 
+    def transform_preprocess(self, sample):
+
+        composed_transforms = transforms.Compose([
+            tr.ToTensor()])
+        return composed_transforms(sample)
 
 if __name__ == '__main__':
     from dataloaders.utils import decode_segmap
