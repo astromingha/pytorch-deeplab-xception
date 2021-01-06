@@ -1,6 +1,6 @@
-from modeling.inference_main import Inference
+from modeling.inference_main_multiclass_noparallel import Inference
 import cv2
-import os
+import os, tqdm, shutil
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 def main():
 
@@ -8,10 +8,10 @@ def main():
     inference = Inference()
 
     ## image load (http method로 대체)
-    image_path = 'config/radish_1-1_15.jpg'
-    img_dir = '/home/user/Desktop/png_shards'#image_valid'#png_shards'
-    out_dir = '/home/user/Desktop/masked_images_v2'
-    for img in os.listdir(img_dir):
+    # img_dir = '/home/user/NAS/internal/Dataset/NIA/1st/preprocess/img_jpgs'#image_valid'#png_shards'
+    img_dir = '/home/user/Desktop/data'#image_valid'#png_shards'
+    out_dir = '/home/user/Desktop/show'
+    for img in tqdm.tqdm(os.listdir(img_dir)):
         image_path = os.path.join(img_dir,img)
 
         img_ndarray = cv2.imread(image_path)
@@ -25,8 +25,8 @@ def main():
         ## Geo-referencing ##
 
         # ########## inference test code (visualization) ##########
-        inference.drawContour(os.path.join(out_dir, img))
-        # inference.maskImg(os.path.join(out_dir,img))
+        # inference.drawContour(os.path.join(out_dir, img))
+        inference.maskImg(os.path.join(out_dir,img))
 
 
 
