@@ -146,7 +146,7 @@ class Inference():
                 self.segmentations = segmentations_batch
                 self.contours_new = contours_new_batch
 
-        return segmentations_batch
+        return segmentations_batch, self.data_tensors.files['test']
 
     def drawContour(self, path):
         img = self.original_image
