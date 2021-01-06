@@ -30,7 +30,7 @@ class Trainer(object):
 
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
+        self.train_loader, self.val_loader, self.test_loader, self.nclass, self.class_names = make_data_loader(args, **kwargs)
 
         # Define network
         model = DeepLab(num_classes=self.nclass,
@@ -78,6 +78,12 @@ class Trainer(object):
             if not os.path.isfile(args.resume):
                 raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
+
+            for ckpt in checkpoint['state_dict']:
+                if 'decoder.last_conv.8.weight' in ckpt:
+                    checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:6,:,:,:]
+                if 'decoder.last_conv.8.bias' in ckpt:
+                    checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:6]
             args.start_epoch = checkpoint['epoch']
             if args.cuda:
                 self.model.module.load_state_dict(checkpoint['state_dict'])
@@ -92,6 +98,7 @@ class Trainer(object):
         # Clear start epoch if fine-tuning
         if args.ft:
             args.start_epoch = 0
+            self.best_pred = 0.0
 
     def training(self, epoch):
         train_loss = 0.0
@@ -104,6 +111,7 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
+
             output = self.model(image)
             loss = self.criterion(output, target)
             loss.backward()
@@ -156,7 +164,8 @@ class Trainer(object):
         # Fast test during the training
         Acc = self.evaluator.Pixel_Accuracy()
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
+        # mIoU = self.evaluator.Mean_Intersection_over_Union()
+        mIoU, iou, confusion_matrix = self.evaluator.Mean_Intersection_over_Union_IOU()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
@@ -168,6 +177,14 @@ class Trainer(object):
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         print('Loss: %.3f' % test_loss)
+        print('----------------------------------------------------------------------')
+        print('iou: ')
+        class_name = self.class_names
+
+        for i in range(len(iou)):
+            print('     %s : %.2f' % (class_name[i], iou[i]))
+        # print('confusion matrix: ',confusion_matrix)
+        print('\n')
 
         new_pred = mIoU
         if new_pred > self.best_pred:
@@ -179,6 +196,9 @@ class Trainer(object):
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+
+            self.saver.save_validation_results(np.transpose(iou), np.transpose(confusion_matrix))
+
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
@@ -194,11 +214,11 @@ def main():
                         help='whether to use SBD dataset (default: True)')
     parser.add_argument('--workers', type=int, default=1,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base-size', type=int, default=1024,
+    parser.add_argument('--base-size', type=int, default=512,
                         help='base image size')
-    parser.add_argument('--crop-size', type=int, default=1024,
+    parser.add_argument('--crop-size', type=int, default=512,
                         help='crop image size')
-    parser.add_argument('--sync-bn', type=bool, default=None,
+    parser.add_argument('--sync-bn', type=bool, default=True,
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
@@ -210,7 +230,7 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch_size', type=int, default=None,
+    parser.add_argument('--batch_size', type=int, default=25,#32,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
     parser.add_argument('--test_batch_size', type=int, default=None,
@@ -239,7 +259,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default=None,
+    parser.add_argument('--resume', type=str, default='/home/user/NAS/internal/Dataset/NIA/3rd/results/deeplab-resnet_pretr_cls6_gpu1/model_best.pth.tar',
                         help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
@@ -248,7 +268,7 @@ def main():
                         help='finetuning on a different dataset')
     # evaluation option
     parser.add_argument('--eval_interval', type=int, default=1,
-                        help='evaluuation interval (default: 1)')
+                        help='evaluation interval (default: 1)')
     parser.add_argument('--no_val', action='store_true', default=False,
                         help='skip validation during training')
 
