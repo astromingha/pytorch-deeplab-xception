@@ -14,7 +14,7 @@ from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 
 
 class Trainer(object):
@@ -30,7 +30,9 @@ class Trainer(object):
 
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loader, self.val_loader, self.test_loader, self.nclass, self.class_names = make_data_loader(args, **kwargs)
+        # self.train_loader, self.val_loader, self.test_loader, self.nclass, self.class_names = make_data_loader(args, **kwargs)
+        self.train_loader, self.test_loader, self.val_loader, self.nclass, self.class_names = make_data_loader(args, **kwargs)
+        # self.train_loader, self.test_loader, self.val_loader, self.nclass, self.class_names, self.img_list = make_data_loader(args, **kwargs)
 
         # Define network
         model = DeepLab(num_classes=self.nclass,
@@ -78,12 +80,12 @@ class Trainer(object):
             if not os.path.isfile(args.resume):
                 raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-
-            for ckpt in checkpoint['state_dict']:
-                if 'decoder.last_conv.8.weight' in ckpt:
-                    checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:6,:,:,:]
-                if 'decoder.last_conv.8.bias' in ckpt:
-                    checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:6]
+            if args.ft:
+                for ckpt in checkpoint['state_dict']:
+                    if 'decoder.last_conv.8.weight' in ckpt:
+                        checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:7,:,:,:]
+                    if 'decoder.last_conv.8.bias' in ckpt:
+                        checkpoint['state_dict'][ckpt] = checkpoint['state_dict'][ckpt][:7]
             args.start_epoch = checkpoint['epoch']
             if args.cuda:
                 self.model.module.load_state_dict(checkpoint['state_dict'])
@@ -121,10 +123,10 @@ class Trainer(object):
             tbar.set_description('Train loss: %.3f' % (self.train_loss_final))
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
-            # Show 10 * 3 inference results each epoch
-            if i % (num_img_tr // 10) == 0:
-               global_step = i + num_img_tr * epoch
-               self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
+            # # Show 10 * 3 inference results each epoch
+            # if i % (num_img_tr // 10) == 0:
+            #    global_step = i + num_img_tr * epoch
+            #    self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
@@ -173,9 +175,11 @@ class Trainer(object):
         self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
         self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
         self.writer.add_scalars('loss',{'train_loss': self.train_loss_final,'val_loss': self.val_loss_final}, epoch)
+
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
+
         print('Loss: %.3f' % test_loss)
         print('----------------------------------------------------------------------')
         print('iou: ')
@@ -212,13 +216,13 @@ def main():
                         help='dataset name (default: pascal)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
-    parser.add_argument('--workers', type=int, default=1,
+    parser.add_argument('--workers', type=int, default=1,#1,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=512,
                         help='base image size')
     parser.add_argument('--crop-size', type=int, default=512,
                         help='crop image size')
-    parser.add_argument('--sync-bn', type=bool, default=True,
+    parser.add_argument('--sync-bn', type=bool, default=False,
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
@@ -230,7 +234,7 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch_size', type=int, default=25,#32,
+    parser.add_argument('--batch_size', type=int, default=34,#34,#60,#85(3),#60(2),#115,#34,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
     parser.add_argument('--test_batch_size', type=int, default=None,
@@ -253,18 +257,22 @@ def main():
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
                         False, help='disables CUDA training')
-    parser.add_argument('--gpu_ids', type=str, default='0',
+    parser.add_argument('--gpu_ids', type=str, default='0,1',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    parser.add_argument('--resume', type=str, default='/home/user/NAS/internal/Dataset/NIA/3rd/results/deeplab-resnet_pretr_cls6_gpu1/model_best.pth.tar',
+    # parser.add_argument('--resume', type=str, default='/Dataset/NIA/4th/results/deeplab-resnet_20_withBG_parral/model_best.pth.tar',
+    parser.add_argument('--resume', type=str, default='checkpoints/deeplab-resnet.pth.tar',
+    # parser.add_argument('--resume', type=str, default='/Dataset/NIA/5th_18/results/18_withBG_removeclass8_34bt/start0/checkpoint.pth.tar',
+    # parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
-    parser.add_argument('--checkname', type=str, default=None,
-                        help='set the checkpoint name')
+    # parser.add_argument('--checkname', type=str, default='resnet_18_withBG_gpu4_from20',
+    parser.add_argument('--checkname', type=str, help='set the checkpoint name', default='18_256')#'19all_withBG_removeclass8')
+    # parser.add_argument('--checkname', type=str, help='set the checkpoint name', default='18_withBG_removeclass8')
     # finetuning pre-trained models
-    parser.add_argument('--ft', action='store_true', default=False,
+    parser.add_argument('--ft', action='store_true', default=True,
                         help='finetuning on a different dataset')
     # evaluation option
     parser.add_argument('--eval_interval', type=int, default=1,
