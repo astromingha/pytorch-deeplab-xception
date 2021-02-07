@@ -8,7 +8,7 @@ from torchvision import transforms
 from dataloaders import custom_transforms as tr
 
 class CropSegmentation(data.Dataset):
-    NUM_CLASSES = 6
+    NUM_CLASSES = 7
 
     def __init__(self, args, root=Path.db_root_dir('cityscapes'), split="train"):
 
@@ -18,36 +18,44 @@ class CropSegmentation(data.Dataset):
         self.files = {}
 
         self.images_base = os.path.join(self.root, 'leftImg8bit', self.split)
-        self.annotations_base = os.path.join(self.root, 'gtFine_mmseg', self.split)
+        self.annotations_base = os.path.join(self.root, 'gtFine_no8class', self.split)
 
-        self.files[split] = self.recursive_glob(rootdir=self.images_base)#, suffix='.png')
+        # self.files[split] = self.recursive_glob(rootdir=self.images_base)#, suffix='.png')
+        self.files[split] = self.recursive_glob(rootdir=self.annotations_base)#, suffix='.png')
 
-        self.void_classes = [0]#
-        self.valid_classes = [1,2,3,4,5,6]
+        self.void_classes = [7,8]#
+        self.valid_classes = [0,1,2,3,4,5,6]
 
-        self.class_names = ['radish', 'carrot', 'cabbage', 'garlic', 'onion', 'broccoli']
+        self.class_names = ['BG', 'radish', 'carrot', 'cabbage', 'garlic', 'onion', 'broccoli']
 
         self.mean = (0.352, 0.393, 0.325)#(0.242, 0.324, 0.241)
         self.std = (0.246, 0.257, 0.230)#(0.188, 0.190, 0.179)
-        self.ignore_index = 255
+        self.ignore_index = 0
         self.class_map = dict(zip(self.valid_classes, range(self.NUM_CLASSES)))
+        # self.class_map = {1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:0}
 
         if not self.files[split]:
             raise Exception("No files for split=[%s] found in %s" % (split, self.images_base))
 
         print("Found %d %s images" % (len(self.files[split]), split))
-
+        if self.split == 'val':
+            self.img_list=self.files[self.split]
     def __len__(self):
         return len(self.files[self.split])
 
     def __getitem__(self, index):
 
-        img_path = self.files[self.split][index].rstrip()
-        lbl_path = os.path.join(self.annotations_base,
-                                # img_path.split(os.sep)[-2],
-                                os.path.basename(img_path)[:-4] + '.png')
+        # img_path = self.files[self.split][index].rstrip()
+        # lbl_path = os.path.join(self.annotations_base,
+        #                         # img_path.split(os.sep)[-2],
+        #                         os.path.basename(img_path)[:-4] + '.jpg')
+        lbl_path = self.files[self.split][index].rstrip()
+        img_path = os.path.join(self.images_base, os.path.basename(lbl_path))
 
-        _img = Image.open(img_path).convert('RGB')
+        try:
+            _img = Image.open(img_path).convert('RGB')
+        except FileNotFoundError:
+            _img = Image.open(img_path[:-4]+'.jpg').convert('RGB')
         _tmp = np.array(Image.open(lbl_path), dtype=np.uint8)
         # _tmp += 1
         _tmp = self.encode_segmap(_tmp)
