@@ -10,15 +10,15 @@ def decode_seg_map_sequence(label_masks, dataset='cityscapes'):
     rgb_masks = torch.from_numpy(np.array(rgb_masks).transpose([0, 3, 1, 2]))
     return rgb_masks
 
-def decode_seg_map_sequence_(label_masks, dataset='cityscapes'):
+def decode_seg_map_sequence_(label_masks, num_classes=6, dataset='cityscapes'):
     rgb_masks = []
     for label_mask in label_masks:
-        rgb_mask = decode_split_classes(label_mask)
+        rgb_mask = decode_split_classes(label_mask,num_classes)
         rgb_masks.append(rgb_mask)
     # rgb_masks = torch.from_numpy(np.array(rgb_masks).transpose([0, 3, 1, 2]))
     return rgb_masks
 # TODO: segmenting more than 4 classes
-def decode_split_classes(label_mask):
+def decode_split_classes(label_mask, num_classes):
     """Decode segmentation class labels into a color image
     Args:
         label_mask (np.ndarray): an (M,N) array of integer values denoting
@@ -28,10 +28,26 @@ def decode_split_classes(label_mask):
     Returns:
         (np.ndarray, optional): the resulting decoded color image.
     """
+    #TODO : numba apply
+    # class_split_mask = np.zeros((label_mask.shape[0], label_mask.shape[1], num_classes-1))
+    # #########safsdf
+    # for cls in range(1,num_classes): # start 1 to remove background class
+    #     # class_single = label_mask.copy()
+    #     class_single = np.zeros((label_mask.shape[0], label_mask.shape[1]))
+    #     class_single[label_mask == 1] = 1
+    #     class_split_mask[:,:,cls-1] = class_single
+    # return class_split_mask
+
+    # class_0 = label_mask.copy()
     class_1 = label_mask.copy()
     class_2 = label_mask.copy()
     class_3 = label_mask.copy()
     class_4 = label_mask.copy()
+    class_5 = label_mask.copy()
+    class_6 = label_mask.copy()
+
+    # class_0[label_mask == 0] = 0
+    # class_0[label_mask != 0] = 1
 
     class_1[label_mask == 1] = 1
     class_1[label_mask != 1] = 0
@@ -45,12 +61,21 @@ def decode_split_classes(label_mask):
     class_4[label_mask == 4] = 4
     class_4[label_mask != 4] = 0
 
-    classes_split_mask = np.zeros((label_mask.shape[0], label_mask.shape[1], 4))
+    class_5[label_mask == 5] = 5
+    class_5[label_mask != 5] = 0
+    #
+    class_6[label_mask == 6] = 6
+    class_6[label_mask != 6] = 0
 
-    classes_split_mask[:,:,0] = class_1
-    classes_split_mask[:,:,1] = class_2
-    classes_split_mask[:,:,2] = class_3
-    classes_split_mask[:,:,3] = class_4
+    classes_split_mask = np.zeros((label_mask.shape[0], label_mask.shape[1], 6))
+
+    # classes_split_mask[:, :, 0] = class_0
+    classes_split_mask[:, :, 0] = class_1
+    classes_split_mask[:, :, 1] = class_2
+    classes_split_mask[:, :, 2] = class_3
+    classes_split_mask[:, :, 3] = class_4
+    classes_split_mask[:, :, 4] = class_5
+    classes_split_mask[:, :, 5] = class_6
 
     return classes_split_mask
 
@@ -69,7 +94,7 @@ def decode_segmap(label_mask, dataset, plot=False):
         n_classes = 21
         label_colours = get_pascal_labels()
     elif dataset == 'cityscapes':
-        n_classes = 43#37
+        n_classes = 7#37
         label_colours = get_cityscapes_labels()
     else:
         raise NotImplementedError
@@ -113,14 +138,15 @@ def encode_segmap(mask):
 
 
 def get_cityscapes_labels():
-    return np.array([
-        [194, 230, 254], [111, 193, 223], [132, 132, 192], [184, 131, 237], [164, 176, 223], [138, 113, 246], [254, 38, 229],
-        [81, 50, 197], [78, 4, 252], [42, 65, 247], [0, 0, 115], [18, 177, 246], [0, 122, 255], [27, 88, 199], [191, 255, 255],
-        [168, 230, 244], [102, 249, 247], [10, 228, 245], [115, 220, 223], [44, 177, 184], [18, 145, 184], [0, 100, 170],
-        [44, 160, 51], [64, 79, 10], [51, 102, 51], [148, 213, 161], [90, 228, 128], [90, 176, 113], [51, 126, 96], [208, 167, 180],
-        [153, 116, 153], [162, 30, 124], [236, 219, 193], [202, 197, 171], [165, 182, 171],[138, 90, 88], [172, 181, 123],
-        [255, 242, 159], [255, 167, 62], [255, 109, 93], [255, 57, 23], [0, 0, 0], [255, 255, 255]
-        ])
+    return np.array([(0,0,0),(255, 255, 255), (255, 255, 0), (255, 0, 255), (0, 255, 0),(0,255,255), (0, 0, 255)])
+    # return np.array([
+    #     [194, 230, 254], [111, 193, 223], [132, 132, 192], [184, 131, 237], [164, 176, 223], [138, 113, 246], [254, 38, 229],
+    #     [81, 50, 197], [78, 4, 252], [42, 65, 247], [0, 0, 115], [18, 177, 246], [0, 122, 255], [27, 88, 199], [191, 255, 255],
+    #     [168, 230, 244], [102, 249, 247], [10, 228, 245], [115, 220, 223], [44, 177, 184], [18, 145, 184], [0, 100, 170],
+    #     [44, 160, 51], [64, 79, 10], [51, 102, 51], [148, 213, 161], [90, 228, 128], [90, 176, 113], [51, 126, 96], [208, 167, 180],
+    #     [153, 116, 153], [162, 30, 124], [236, 219, 193], [202, 197, 171], [165, 182, 171],[138, 90, 88], [172, 181, 123],
+    #     [255, 242, 159], [255, 167, 62], [255, 109, 93], [255, 57, 23], [0, 0, 0], [255, 255, 255]
+    #     ])
 
     # return np.array([
     #     [128, 64, 128],
