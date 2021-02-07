@@ -6,22 +6,25 @@ import glob
 from dataloaders.datasets import radish, crops
 import json
 import pandas as pd
+from mypath import Path
 
 class Saver(object):
 
     def __init__(self, args):
         self.args = args
         # self.directory = os.path.join('run', args.dataset, args.checkname)
-        self.directory = os.path.join('/home/user/NAS/internal/Dataset/NIA/3rd/', 'results', args.checkname+'_Test')
+        # root_dir = os.path.split(os.path.split(Path.db_root_dir(args.dataset))[0])[0]
+        root_dir = os.path.split(Path.db_root_dir(args.dataset))[0]
+        self.directory = os.path.join(root_dir, 'results', args.checkname)
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
 
         self.experiment_dir = os.path.join(self.directory, 'experiment_{}'.format(str(run_id)))
-        if not os.path.exists(self.experiment_dir):
-            os.makedirs(self.experiment_dir)
+        # if not os.path.exists(self.experiment_dir):
+        #     os.makedirs(self.experiment_dir)
 
         # self.cityscapes_train = radish.LandcoverSegmentation(args, split='train')
-        self.cityscapes_train = crops.CropSegmentation(args, split='train')
+        # self.cityscapes_train = crops.CropSegmentation(args, split='train')
 
     def save_validation_results(self,iou,confusion_matrix):
         dataframe1 = pd.DataFrame(iou)
@@ -60,6 +63,10 @@ class Saver(object):
                 shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
 
     def save_experiment_config(self):
+        if not os.path.exists(self.experiment_dir):
+            os.makedirs(self.experiment_dir)
+        self.cityscapes_train = crops.CropSegmentation(self.args, split='train')
+
         logfile = os.path.join(self.experiment_dir, 'parameters.txt')
         log_file = open(logfile, 'w')
         p = OrderedDict()
@@ -79,6 +86,7 @@ class Saver(object):
         p['gpu_num'] = self.args.gpu_ids
         p['resume'] = self.args.resume
         p['use_balanced_weights'] = self.args.use_balanced_weights
+        p['workers'] = self.args.workers
 
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
