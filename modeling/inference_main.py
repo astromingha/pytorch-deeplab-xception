@@ -1,5 +1,6 @@
 from modeling.deeplab import *
 from modeling import custom_transforms as tr
+from modeling.sync_batchnorm.replicate import patch_replication_callback
 from PIL import Image
 from torchvision import transforms
 # from modeling.utils import  *
@@ -11,7 +12,7 @@ from pycocotools import mask as maskUtils
 from skimage import draw
 from dataloaders.utils import decode_seg_map_sequence_
 from torch.utils import data
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def polygon2mask(image_shape, polygon, color=(255,), image=None):
     vertex_col_coords, vertex_row_coords = polygon.T
@@ -26,7 +27,7 @@ def polygon2mask(image_shape, polygon, color=(255,), image=None):
 
 class GetData(data.Dataset):
     def __init__(self, crop_size, img_dir):
-        self.NUM_CLASSES = 5
+        self.NUM_CLASSES = 7
         # self.root = img_dir
         self.split = 'test'
         self.crop_size = crop_size
@@ -39,14 +40,14 @@ class GetData(data.Dataset):
 
         self.files[self.split] = self.recursive_glob(rootdir=self.images_base)#, suffix='.png')
 
-        self.void_classes = [-1]#
-        self.valid_classes = [0,1,2,3,4]
+        self.void_classes = [7,8]#
+        self.valid_classes = [0,1,2,3,4,5,6]
 
-        self.class_names = ['0','1','2','3','4']
+        self.class_names = ['bg','radish', 'carrot', 'cabbage', 'garlic', 'onion', 'broccoli']
 
         self.mean = (0.352, 0.393, 0.325)#(0.242, 0.324, 0.241)
         self.std = (0.246, 0.257, 0.230)#(0.188, 0.190, 0.179)
-        self.ignore_index = 255
+        self.ignore_index = 0#255
         self.class_map = dict(zip(self.valid_classes, range(self.NUM_CLASSES)))
 
         # if not self.files[split]:
@@ -88,14 +89,25 @@ class GetData(data.Dataset):
 class Inference():
     def __init__(self):
         ## model load ( at the beginning )
-        model_ckpt = 'run/NIA/deeplab-resnet_512/model_best.pth.tar'
-        self.batch_size = 200#16
+        # model_ckpt = '/home/user/NAS/internal/Dataset/NIA/4th_20/results/deeplab-resnet_20_withBG_parral/model_best.pth.tar'#experiment_0/checkpoint.pth.tar'
+        model_ckpt = '/home/user/NAS/internal/Dataset/NIA/5th_18/results/18_withBG_removeclass8_34bt/model_best.pth.tar'#experiment_0/checkpoint.pth.tar'
+        self.batch_size = 34#16
         self.crop_size = 512
-        self.kwargs = {'num_workers': 2, 'pin_memory': True}
+        self.kwargs = {'num_workers': 1, 'pin_memory': True}
 
-        self.model = DeepLab(num_classes=5).cuda()
+        # self.model = DeepLab(num_classes=7).cuda()
+        self.model = DeepLab(num_classes=7,
+                        backbone='resnet',
+                        output_stride=16,
+                        sync_bn=False,
+                        freeze_bn=False)
+
+        self.model = torch.nn.DataParallel(self.model, device_ids=[0,1])
+        patch_replication_callback(self.model)
+        self.model = self.model.cuda()
+
         ckpt = torch.load(model_ckpt)
-        self.model.load_state_dict(ckpt['state_dict'])
+        self.model.module.load_state_dict(ckpt['state_dict'])
         self.model.eval()
 
     def __call__(self, image):
@@ -163,7 +175,8 @@ class Inference():
 
     def maskImg(self, path):
         image_files = self.data_tensors.files['test']
-        color = [(255, 255, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
+        color = [(255, 255, 255), (255, 255, 0), (255, 0, 255), (0, 255, 0), (0,255,255), (0, 0, 255)]
+        # [255, 255, 255], [255, 255, 0]:sky, [255, 0, 255]:jaju, [0, 255, 0]:green, [127, 0, 127]:purple, [0, 0, 255]:red
         seg = self.segmentations
 
         for idx,img_dir in enumerate(image_files):
